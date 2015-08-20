@@ -7,6 +7,8 @@ import android.graphics.drawable.NinePatchDrawable;
 import android.os.Handler;
 import android.os.Message;
 import android.util.AttributeSet;
+import android.util.Log;
+import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.FrameLayout;
 
 import java.lang.ref.SoftReference;
@@ -17,8 +19,14 @@ import java.lang.ref.SoftReference;
  */
 public class FocusFrameLayout extends FrameLayout {
 
-    Handler mHandler;
-    NinePatchDrawable mDrawable;
+    private static final String TAG = "FocusFrameLayout";
+
+    private Handler mHandler;
+
+    private NinePatchDrawable mDrawable;
+    private Rect mDrawablePaddingRect;
+
+    private AccelerateDecelerateInterpolator mInterpolator;
 
     int tFrame;
     int mFrame;
@@ -52,8 +60,11 @@ public class FocusFrameLayout extends FrameLayout {
         mDrawable = (NinePatchDrawable) context.getResources().getDrawable(R.drawable.ytm_common_focus);
         if (mDrawable != null) {
             mDrawable.setBounds(0, 0, 0, 0);
+            mDrawablePaddingRect = new Rect();
+            mDrawable.getPadding(mDrawablePaddingRect);
         }
         mHandler = new FocusHandler(this);
+        mInterpolator = new AccelerateDecelerateInterpolator();
     }
 
     @Override
@@ -67,6 +78,11 @@ public class FocusFrameLayout extends FrameLayout {
         mFrame = 0;
 
         Rect srcRect = mDrawable.getBounds();
+
+        dstRect.left = dstRect.left - mDrawablePaddingRect.left;
+        dstRect.top = dstRect.top - mDrawablePaddingRect.top;
+        dstRect.right = dstRect.right + mDrawablePaddingRect.right;
+        dstRect.bottom = dstRect.bottom + mDrawablePaddingRect.bottom;
 
         initL = srcRect.left;
         initT = srcRect.top;
@@ -88,8 +104,13 @@ public class FocusFrameLayout extends FrameLayout {
             srcRect.top = (int) (initT + (deltaT * mFrame));
             srcRect.right = (int) (initR + (deltaR * mFrame));
             srcRect.bottom = (int) (initB + (deltaB * mFrame));
-            mHandler.removeMessages(0);
-            mHandler.sendEmptyMessageDelayed(0, 5L);
+/*            srcRect.left = initL + (int) mInterpolator.getInterpolation(deltaL * mFrame);
+            srcRect.top = initT + (int) mInterpolator.getInterpolation(deltaT * mFrame);
+            srcRect.right = initR + (int) mInterpolator.getInterpolation(deltaR * mFrame);
+            srcRect.bottom = initB + (int) mInterpolator.getInterpolation(deltaB * mFrame);
+            Log.e(TAG, "deltaL * mFrame = " + (deltaL * mFrame));
+            Log.e(TAG, "deltaL * mFrame's interpolation = " + mInterpolator.getInterpolation(deltaL * mFrame));*/
+            mHandler.sendEmptyMessage(0);
         }
     }
 

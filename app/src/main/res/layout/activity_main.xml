@@ -3,24 +3,38 @@
     android:id="@+id/container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@android:color/holo_purple"
     tools:context=".MainActivity">
 
-    <LinearLayout
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
         <Button
-            android:id="@+id/move_100"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="move 100" />
+            android:id="@+id/small"
+            android:layout_width="100px"
+            android:layout_height="75px"
+            android:layout_alignParentBottom="true"
+            android:layout_margin="100px"
+            android:background="@drawable/button_bg" />
 
         <Button
-            android:id="@+id/move_200"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="move 200" />
-    </LinearLayout>
+            android:id="@+id/medium"
+            android:layout_width="316px"
+            android:layout_height="316px"
+            android:layout_margin="100px"
+            android:background="@drawable/button_bg" />
+
+        <Button
+            android:id="@+id/large"
+            android:layout_width="500px"
+            android:layout_height="400px"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:layout_margin="100px"
+            android:background="@drawable/button_bg" />
+
+    </RelativeLayout>
 
 
 </com.linkin.floatindicator.FocusFrameLayout>
