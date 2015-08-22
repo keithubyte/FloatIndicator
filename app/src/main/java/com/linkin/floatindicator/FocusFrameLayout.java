@@ -3,12 +3,14 @@ package com.linkin.floatindicator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Rect;
-import android.graphics.drawable.NinePatchDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.Message;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.animation.AccelerateDecelerateInterpolator;
+import android.view.FocusFinder;
+import android.view.animation.AnticipateOvershootInterpolator;
+import android.view.animation.Interpolator;
 import android.widget.FrameLayout;
 
 import java.lang.ref.SoftReference;
@@ -23,10 +25,12 @@ public class FocusFrameLayout extends FrameLayout {
 
     private Handler mHandler;
 
-    private NinePatchDrawable mDrawable;
+    private FocusFinder mFocusFinder;
+
+    private Drawable mDrawable;
     private Rect mDrawablePaddingRect;
 
-    private AccelerateDecelerateInterpolator mInterpolator;
+    private Interpolator mInterpolator;
 
     int tFrame;
     int mFrame;
@@ -57,14 +61,21 @@ public class FocusFrameLayout extends FrameLayout {
     }
 
     private void init(Context context) {
-        mDrawable = (NinePatchDrawable) context.getResources().getDrawable(R.drawable.ytm_common_focus);
+        mDrawable = context.getResources().getDrawable(R.drawable.ytm_common_focus);
         if (mDrawable != null) {
             mDrawable.setBounds(0, 0, 0, 0);
             mDrawablePaddingRect = new Rect();
             mDrawable.getPadding(mDrawablePaddingRect);
+
+            Log.e(TAG, "left = " + mDrawablePaddingRect.left
+                    + ", top = " + mDrawablePaddingRect.top
+                    + ", right = " + mDrawablePaddingRect.right
+                    + ", bottom = " + mDrawablePaddingRect.bottom);
         }
         mHandler = new FocusHandler(this);
-        mInterpolator = new AccelerateDecelerateInterpolator();
+        mFocusFinder = FocusFinder.getInstance();
+        mInterpolator = new AnticipateOvershootInterpolator(1.0f);
+        //mInterpolator = new AccelerateInterpolator();
     }
 
     @Override
@@ -100,16 +111,13 @@ public class FocusFrameLayout extends FrameLayout {
     public void move() {
         if (mFrame++ < tFrame) {
             Rect srcRect = mDrawable.getBounds();
-            srcRect.left = (int) (initL + (deltaL * mFrame));
-            srcRect.top = (int) (initT + (deltaT * mFrame));
-            srcRect.right = (int) (initR + (deltaR * mFrame));
-            srcRect.bottom = (int) (initB + (deltaB * mFrame));
-/*            srcRect.left = initL + (int) mInterpolator.getInterpolation(deltaL * mFrame);
-            srcRect.top = initT + (int) mInterpolator.getInterpolation(deltaT * mFrame);
-            srcRect.right = initR + (int) mInterpolator.getInterpolation(deltaR * mFrame);
-            srcRect.bottom = initB + (int) mInterpolator.getInterpolation(deltaB * mFrame);
-            Log.e(TAG, "deltaL * mFrame = " + (deltaL * mFrame));
-            Log.e(TAG, "deltaL * mFrame's interpolation = " + mInterpolator.getInterpolation(deltaL * mFrame));*/
+
+            float radio = mInterpolator.getInterpolation((float)mFrame / (float)tFrame);
+            srcRect.left = (int) (initL + (deltaL * mFrame * radio));
+            srcRect.top = (int) (initT + (deltaT * mFrame * radio));
+            srcRect.right = (int) (initR + (deltaR * mFrame * radio));
+            srcRect.bottom = (int) (initB + (deltaB * mFrame * radio));
+
             mHandler.sendEmptyMessage(0);
         }
     }

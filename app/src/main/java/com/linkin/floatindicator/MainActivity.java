@@ -3,7 +3,6 @@ package com.linkin.floatindicator;
 import android.app.Activity;
 import android.graphics.Rect;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
@@ -36,8 +35,8 @@ public class MainActivity extends Activity implements View.OnFocusChangeListener
     public void onFocusChange(View v, boolean hasFocus) {
         if (hasFocus) {
             Rect rect = ViewHelper.getBounds(v);
-            mContainer.anim(30, rect);
-            Log.e("FloatIndicator", "left = " + rect.left + ", top = " + rect.top + ", right = " + rect.right + ", bottom = " + rect.bottom);
+            mContainer.anim(36, rect);
+            // Log.e("FloatIndicator", "left = " + rect.left + ", top = " + rect.top + ", right = " + rect.right + ", bottom = " + rect.bottom);
         }
     }
 }
