@@ -1,15 +1,18 @@
 package com.linkin.floatindicator;
 
+import android.animation.TimeInterpolator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.FocusFinder;
-import android.view.animation.AnticipateOvershootInterpolator;
+import android.view.View;
+import android.view.ViewTreeObserver;
+import android.view.animation.DecelerateInterpolator;
 import android.view.animation.Interpolator;
 import android.widget.FrameLayout;
 
@@ -22,15 +25,13 @@ import java.lang.ref.SoftReference;
 public class FocusFrameLayout extends FrameLayout {
 
     private static final String TAG = "FocusFrameLayout";
-
-    private Handler mHandler;
-
-    private FocusFinder mFocusFinder;
+    private static final int DEFAULT_ANIM_FRAME = 30;
 
     private Drawable mDrawable;
     private Rect mDrawablePaddingRect;
-
-    private Interpolator mInterpolator;
+    private Interpolator mFrameInterpolator;
+    private TimeInterpolator mDelayInterpolator;
+    private FocusThread mFocusThread;
 
     int tFrame;
     int mFrame;
@@ -72,10 +73,19 @@ public class FocusFrameLayout extends FrameLayout {
                     + ", right = " + mDrawablePaddingRect.right
                     + ", bottom = " + mDrawablePaddingRect.bottom);
         }
-        mHandler = new FocusHandler(this);
-        mFocusFinder = FocusFinder.getInstance();
-        mInterpolator = new AnticipateOvershootInterpolator(1.0f);
-        //mInterpolator = new AccelerateInterpolator();
+
+        mFocusThread = new FocusThread(this);
+        mFocusThread.start();
+
+        mFrameInterpolator = new DecelerateInterpolator(4.0F);
+        mDelayInterpolator = new DelayInterpolator();
+
+        getViewTreeObserver().addOnGlobalFocusChangeListener(new ViewTreeObserver.OnGlobalFocusChangeListener() {
+            @Override
+            public void onGlobalFocusChanged(View oldFocus, View newFocus) {
+                anim(DEFAULT_ANIM_FRAME, ViewHelper.getBounds(newFocus));
+            }
+        });
     }
 
     @Override
@@ -112,13 +122,40 @@ public class FocusFrameLayout extends FrameLayout {
         if (mFrame++ < tFrame) {
             Rect srcRect = mDrawable.getBounds();
 
-            float radio = mInterpolator.getInterpolation((float)mFrame / (float)tFrame);
+            float progress = (float) mFrame / (float) tFrame;
+            float radio = mFrameInterpolator.getInterpolation(progress);
             srcRect.left = (int) (initL + (deltaL * mFrame * radio));
             srcRect.top = (int) (initT + (deltaT * mFrame * radio));
             srcRect.right = (int) (initR + (deltaR * mFrame * radio));
             srcRect.bottom = (int) (initB + (deltaB * mFrame * radio));
 
-            mHandler.sendEmptyMessage(0);
+            long delay = (long) (mDelayInterpolator.getInterpolation(progress) * 20L);
+            mFocusThread.getHandler().sendEmptyMessageDelayed(MSG_MOVE, delay);
+
+        }
+    }
+
+    private static final int MSG_MOVE = 0;
+    private static final int MSG_ANIM = 1;
+
+    private static class FocusThread extends Thread {
+
+        private FocusHandler mHandler;
+        private FocusFrameLayout mLayout;
+
+        public FocusThread(FocusFrameLayout layout) {
+            mLayout = layout;
+        }
+
+        @Override
+        public void run() {
+            Looper.prepare();
+            mHandler = new FocusHandler(mLayout);
+            Looper.loop();
+        }
+
+        public Handler getHandler() {
+            return mHandler;
         }
     }
 
@@ -134,14 +171,22 @@ public class FocusFrameLayout extends FrameLayout {
             FocusFrameLayout layout = mRef.get();
             if (layout != null) {
                 switch (msg.what) {
-                    case 0:
-                        layout.invalidate();
+                    case MSG_MOVE:
+                        layout.postInvalidate();
                         layout.move();
                         break;
                     default:
                         break;
                 }
             }
+        }
+    }
+
+    private class DelayInterpolator implements TimeInterpolator {
+
+        @Override
+        public float getInterpolation(float t) {
+            return t * t;
         }
     }
 }
